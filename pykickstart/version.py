@@ -224,3 +224,16 @@ def makeVersion(version=DEVEL):
 
 def getVersionFromCommandClass(cls):
     return versionMap[cls.__name__.split('_')[0]]
+
+def getNextVersion(version=DEVEL):
+    """Return the next version as a constant.  version must be a constant."""
+    if version == DEVEL:
+        return DEVEL
+
+    found = DEVEL
+    for (key, val) in list(versionMap.items()):
+        if key == "DEVEL":
+            continue
+        elif val > version and val < found:
+            found = val
+    return found

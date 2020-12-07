@@ -3,7 +3,7 @@ import sys
 sys.path.insert(0, "../")
 from pykickstart.handlers import control
 from pykickstart.version import DEVEL, stringToVersion, versionToString, \
-    getVersionFromCommandClass
+    getVersionFromCommandClass, versionToLongString, getNextVersion
 
 
 def _format_title(title):
@@ -20,7 +20,9 @@ if __name__ == "__main__":
     # tests/handlers.py guarantees we always have the latest
     # commands available in the commandMap, hence the latest
     # documentation as well.
+    # note also the last handler where a command is seen
     all_commands = {}
+    command_last_seen = {}
     for _version in control.commandMap:
         for command_name, command_class in control.commandMap[_version].items():
             command_version = getVersionFromCommandClass(command_class)
@@ -45,6 +47,12 @@ if __name__ == "__main__":
                 if command_version > last_version:
                     all_commands[command_name] = command_class
 
+            if command_name not in command_last_seen:
+                command_last_seen[command_name] = _version
+            elif _version > command_last_seen[command_name]:
+                # update another map with highest version where command was seen
+                command_last_seen[command_name] = _version
+
     # now loop over all commands and document them
     already_documented = []
     commands = list(all_commands.keys())
@@ -61,4 +69,11 @@ if __name__ == "__main__":
         op = command_class()._getParser()
         print(_format_title(op.prog))
         op.print_help()
+
+        # if command was last seen earlier than "latest", it is removed
+        if command_last_seen[command_name] < DEVEL:
+            version_last_seen = versionToLongString(command_last_seen[command_name])
+            version_removed = versionToLongString(getNextVersion(command_last_seen[command_name]))
+            print(".. versionremoved:: %s -> %s" % (version_last_seen, version_removed))
+
         already_documented.append(command_class)
